@@ -40,6 +40,15 @@ class Value:
             self.grad += other * (self.data ** (other - 1)) * out.grad
         out._backward = _backward
 
+        return out
+    
+    def __radd__(self, other):
+        """
+        当你写 2 + v 时，Python 先尝试 int.__add__(2, v)，通常不认识你的 Value，
+        然后会回退调用 v.__radd__(2)
+        """
+        return self + other
+
     def __rmul__(self, other):
         """
         当你写 2 * v 时，Python 先尝试 int.__mul__(2, v)，通常不认识你的 Value，
