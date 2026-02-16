@@ -10,6 +10,8 @@ class Value:
     def __repr__(self):
         return f"Value(data={self.data})"
     
+    # ---
+    # 基础运算
     def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data + other.data, (self, other), "+")
@@ -42,6 +44,22 @@ class Value:
 
         return out
     
+    def __neg__(self):
+        return self * -1
+    
+    # ---
+    # 派生运算
+    def __sub__(self, other):
+        return self + (-other)
+    
+    # 实现更通用"除法"的思路: a / b = a * (1/b) = a * (b**-1)
+    # 这样我们只需要实现幂运算就可以了,当K = -1时就是除法
+    def __truediv__(self, other):
+        return self * other**-1    
+    
+    # ---
+    # 右侧运算:当表达式左边对象“不知道怎么和右边算”时，Python 会尝试调用右边对象的“反向方法”
+    # 就是把两个对象进行调换，调用右边对象的 __radd__ 或 __rmul__ 等方法
     def __radd__(self, other):
         """
         当你写 2 + v 时，Python 先尝试 int.__add__(2, v)，通常不认识你的 Value，
@@ -49,23 +67,26 @@ class Value:
         """
         return self + other
 
+    def __rsub__(self, other):
+        """
+        当你写 2 - v 时，Python 先尝试 int.__sub__(2, v)，通常不认识你的 Value，
+        然后会回退调用 v.__rsub__(2)
+        """
+        return (-self) + other
+    
     def __rmul__(self, other):
         """
         当你写 2 * v 时，Python 先尝试 int.__mul__(2, v)，通常不认识你的 Value，
         然后会回退调用 v.__rmul__(2)
         """
         return self * other
-
-    # 实现更通用"除法"的思路: a / b = a * (1/b) = a * (b**-1)
-    # 这样我们只需要实现幂运算就可以了,当K = -1时就是除法
-    def __truediv__(self, other):
-        return self * other**-1    
-
-    def __neg__(self):
-        return self * -1
-
-    def __sub__(self, other):
-        return self + (-other)
+    
+    def __rtruediv__(self, other):
+        """
+        当你写 2 / v 时，Python 先尝试 int.__truediv__(2, v)，通常不认识你的 Value，
+        然后会回退调用 v.__rtruediv__(2)
+        """
+        return other * self**-1
     
     def tanh(self):
         x = self.data
@@ -84,6 +105,15 @@ class Value:
 
         def _backward():
             self.grad += out.data * out.grad
+        out._backward = _backward
+
+        return out
+    
+    def relu(self):
+        out = Value(0 if self.data < 0 else self.data, (self,), "ReLU")
+
+        def _backward():
+            self.grad += (out.data > 0 ) * out.grad
         out._backward = _backward
 
         return out
