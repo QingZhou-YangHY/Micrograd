@@ -1,3 +1,7 @@
 # Micrograd
 
-这是一个基于 Andrej Karpathy 教程实现的微型自动微分库，旨在帮助理解自动微分的底层原理以及 PyTorch 等高级框架的内部工作机制。  
+A tiny autograd engine implementation based on [Andrej Karpathy's tutorial](https://github.com/karpathy/micrograd), designed to help understand the underlying principles of automatic differentiation and how advanced frameworks like PyTorch work internally.
+
+## Difference with PyTorch
+
+Micrograd is a scalar-valued engine. But in PyTorch, everything is based around tensors. Tensors are just n-dimensional arrays of scalars.

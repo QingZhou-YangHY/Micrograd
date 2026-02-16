@@ -11,6 +11,7 @@ class Value:
         return f"Value(data={self.data})"
     
     def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data + other.data, (self, other), "+")
         
         def _backward():
@@ -21,6 +22,7 @@ class Value:
         return out
     
     def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data * other.data, (self, other), "*")
         
         def _backward():
@@ -30,6 +32,32 @@ class Value:
 
         return out
     
+    def __pow__(self, other):
+        assert isinstance(other, (int, float)), "only supporting int/float powers for now"
+        out = Value(self.data ** other, (self,), f"**{other}")
+
+        def _backward():
+            self.grad += other * (self.data ** (other - 1)) * out.grad
+        out._backward = _backward
+
+    def __rmul__(self, other):
+        """
+        当你写 2 * v 时，Python 先尝试 int.__mul__(2, v)，通常不认识你的 Value，
+        然后会回退调用 v.__rmul__(2)
+        """
+        return self * other
+
+    # 实现更通用"除法"的思路: a / b = a * (1/b) = a * (b**-1)
+    # 这样我们只需要实现幂运算就可以了,当K = -1时就是除法
+    def __truediv__(self, other):
+        return self * other**-1    
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+    
     def tanh(self):
         x = self.data
         t = (math.exp(2*x) - 1) / (math.exp(2*x) + 1)
@@ -37,6 +65,16 @@ class Value:
         
         def _backward():
             self.grad += (1 - t**2) * out.grad
+        out._backward = _backward
+
+        return out
+    
+    def exp(self):
+        x = self.data
+        out = Value(math.exp(x), (self,), "exp")
+
+        def _backward():
+            self.grad += out.data * out.grad
         out._backward = _backward
 
         return out
